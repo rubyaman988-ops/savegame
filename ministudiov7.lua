@@ -1,4 +1,4 @@
-print("[MiniStudio] v7 build 2026-11-23-b")
+print("[MiniStudio] v7 build 2026-11-23-c")
 --[[
 	Player Utility Panel (LocalScript)
 	Letak: StarterPlayer > StarterPlayerScripts
@@ -1960,6 +1960,10 @@ local function createMiniStudio()
 		return function(options)
 			local errors = {}
 			local env = (type(getgenv) == "function" and getgenv()) or _G
+			-- Xeno tidak punya getrawmetatable; USSI/saveinstance memakainya.
+			if type(env) == "table" and env.getrawmetatable == nil then
+				env.getrawmetatable = (type(debug) == "table" and debug.getmetatable) or getmetatable
+			end
 			local seen = {}
 			if type(env) == "table" then
 				for _, holder in ipairs({ env, env.Xeno }) do
