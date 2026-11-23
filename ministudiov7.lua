@@ -1936,14 +1936,35 @@ local function createMiniStudio()
 		refreshExportPanel()
 	end)
 
+	local USSI_REPO = "https://raw.githubusercontent.com/luau/UniversalSynSaveInstance/main/"
+	local cachedSaveInstance = nil
+
 	local function resolveXenoSaveInstance()
+		if cachedSaveInstance then return cachedSaveInstance end
 		local env = (type(getgenv) == "function" and getgenv()) or _G
-		local candidate = env
-		if type(candidate) ~= "table" or type(candidate.saveinstance) ~= "function" then
-			candidate = type(env) == "table" and env.Xeno or nil
+		if type(env) == "table" then
+			for _, holder in ipairs({ env, env.Xeno }) do
+				if type(holder) == "table" then
+					for _, key in ipairs({ "saveinstance", "synsaveinstance" }) do
+						if type(holder[key]) == "function" then
+							cachedSaveInstance = holder[key]
+							return cachedSaveInstance
+						end
+					end
+				end
+			end
 		end
-		if type(candidate) == "table" and type(candidate.saveinstance) == "function" then
-			return candidate.saveinstance
+		-- Fallback: load USSI langsung dari GitHub.
+		if type(loadstring) == "function" and type(game.HttpGet) == "function" then
+			local ok, fn = pcall(function()
+				return loadstring(game:HttpGet(USSI_REPO .. "saveinstance.luau", true), "saveinstance")()
+			end)
+			if ok and type(fn) == "function" then
+				cachedSaveInstance = fn
+				return fn
+			elseif not ok then
+				warn("MiniStudio: gagal load USSI: " .. tostring(fn))
+			end
 		end
 		return nil
 	end
@@ -1956,7 +1977,7 @@ local function createMiniStudio()
 		end
 		local saveinstance = resolveXenoSaveInstance()
 		if not saveinstance then
-			exportStatusLabel.Text = "Xeno.saveinstance tidak tersedia di environment ini."
+			exportStatusLabel.Text = "saveinstance tidak tersedia dan USSI gagal dimuat (cek HttpGet)."
 			return
 		end
 		saveSelectedButton.Active = false
@@ -1968,14 +1989,13 @@ local function createMiniStudio()
 				mode = "__selective_export__",
 				ExtraInstances = selectedRoots,
 				IsModel = true,
-				Binary = true,
 				ShowStatus = true,
 				FilePath = basePath,
 			})
 			saveSelectedButton.Active = true
 			saveSelectedButton.AutoButtonColor = true
 			if ok then
-				exportStatusLabel.Text = "USSI kembali; verifikasi file .rbxm di Xeno dan buka di Studio."
+				exportStatusLabel.Text = "USSI kembali; verifikasi file .rbxmx di workspace executor dan buka di Studio."
 			else
 				exportStatusLabel.Text = "USSI error; lihat console Xeno."
 				warn("MiniStudio SaveInstance: " .. tostring(err))
@@ -2000,7 +2020,7 @@ local function createMiniStudio()
 	fullSaveButton.Activated:Connect(function()
 		local saveinstance = resolveXenoSaveInstance()
 		if not saveinstance then
-			exportStatusLabel.Text = "Xeno.saveinstance tidak tersedia di environment ini."
+			exportStatusLabel.Text = "saveinstance tidak tersedia dan USSI gagal dimuat (cek HttpGet)."
 			return
 		end
 		fullSaveButton.Active = false
@@ -2026,9 +2046,7 @@ local function createMiniStudio()
 		local basePath = "XenoFullSave_" .. os.date("!%Y%m%d_%H%M%S")
 		task.spawn(function()
 			local ok, err = pcall(saveinstance, {
-				Object = game,
 				IsModel = false,
-				Binary = true,
 				ShowStatus = true,
 				FilePath = basePath,
 			})
