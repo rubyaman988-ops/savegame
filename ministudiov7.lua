@@ -1937,36 +1937,54 @@ local function createMiniStudio()
 	end)
 
 	local USSI_REPO = "https://raw.githubusercontent.com/luau/UniversalSynSaveInstance/main/"
-	local cachedSaveInstance = nil
+	local ussiFn = nil
 
+	local function loadUSSI()
+		if ussiFn then return ussiFn end
+		if type(loadstring) ~= "function" or type(game.HttpGet) ~= "function" then
+			return nil, "loadstring/HttpGet tidak tersedia"
+		end
+		local ok, fn = pcall(function()
+			return loadstring(game:HttpGet(USSI_REPO .. "saveinstance.luau", true), "saveinstance")()
+		end)
+		if ok and type(fn) == "function" then
+			ussiFn = fn
+			return fn
+		end
+		return nil, "load USSI gagal: " .. tostring(fn)
+	end
+
+	-- Coba saveinstance bawaan executor dulu; kalau error/tidak ada, coba USSI.
 	local function resolveXenoSaveInstance()
-		if cachedSaveInstance then return cachedSaveInstance end
-		local env = (type(getgenv) == "function" and getgenv()) or _G
-		if type(env) == "table" then
-			for _, holder in ipairs({ env, env.Xeno }) do
-				if type(holder) == "table" then
-					for _, key in ipairs({ "saveinstance", "synsaveinstance" }) do
-						if type(holder[key]) == "function" then
-							cachedSaveInstance = holder[key]
-							return cachedSaveInstance
+		return function(options)
+			local errors = {}
+			local env = (type(getgenv) == "function" and getgenv()) or _G
+			local seen = {}
+			if type(env) == "table" then
+				for _, holder in ipairs({ env, env.Xeno }) do
+					if type(holder) == "table" then
+						for _, key in ipairs({ "saveinstance", "synsaveinstance" }) do
+							local fn = holder[key]
+							if type(fn) == "function" and not seen[fn] then
+								seen[fn] = true
+								local ok, err = pcall(fn, options)
+								if ok then return end
+								errors[#errors + 1] = key .. ": " .. tostring(err)
+							end
 						end
 					end
 				end
 			end
-		end
-		-- Fallback: load USSI langsung dari GitHub.
-		if type(loadstring) == "function" and type(game.HttpGet) == "function" then
-			local ok, fn = pcall(function()
-				return loadstring(game:HttpGet(USSI_REPO .. "saveinstance.luau", true), "saveinstance")()
-			end)
-			if ok and type(fn) == "function" then
-				cachedSaveInstance = fn
-				return fn
-			elseif not ok then
-				warn("MiniStudio: gagal load USSI: " .. tostring(fn))
+			local fn, loadErr = loadUSSI()
+			if fn then
+				local ok, err = pcall(fn, options)
+				if ok then return end
+				errors[#errors + 1] = "USSI: " .. tostring(err)
+			else
+				errors[#errors + 1] = tostring(loadErr)
 			end
+			error(table.concat(errors, " | "), 0)
 		end
-		return nil
 	end
 
 	saveSelectedButton.Activated:Connect(function()
@@ -1997,7 +2015,8 @@ local function createMiniStudio()
 			if ok then
 				exportStatusLabel.Text = "USSI kembali; verifikasi file .rbxmx di workspace executor dan buka di Studio."
 			else
-				exportStatusLabel.Text = "USSI error; lihat console Xeno."
+				exportStatusLabel.Text = "Error: " .. string.sub(tostring(err), 1, 160)
+				if type(setclipboard) == "function" then pcall(setclipboard, tostring(err)) end
 				warn("MiniStudio SaveInstance: " .. tostring(err))
 			end
 		end)
@@ -2062,7 +2081,8 @@ local function createMiniStudio()
 				exportStatusLabel.Text = "Periksa README USSI untuk format/fallback dan buka hasilnya di Studio."
 			else
 				fullSaveProgressLabel.Text = "Full Save gagal; progres tidak lengkap."
-				exportStatusLabel.Text = "Full Save error; lihat console Xeno."
+				exportStatusLabel.Text = "Error: " .. string.sub(tostring(err), 1, 160)
+				if type(setclipboard) == "function" then pcall(setclipboard, tostring(err)) end
 				warn("MiniStudio Full Save: " .. tostring(err))
 			end
 		end)
