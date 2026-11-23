@@ -1,3 +1,4 @@
+print("[MiniStudio] v7 build 2026-11-23-b")
 --[[
 	Player Utility Panel (LocalScript)
 	Letak: StarterPlayer > StarterPlayerScripts
