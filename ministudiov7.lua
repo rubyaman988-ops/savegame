@@ -1,4 +1,4 @@
-print("[MiniStudio] v7 build 2026-11-23-d")
+print("[MiniStudio] v7 build 2026-11-23-e")
 --[[
 	Player Utility Panel (LocalScript)
 	Letak: StarterPlayer > StarterPlayerScripts
@@ -1937,6 +1937,19 @@ local function createMiniStudio()
 		refreshExportPanel()
 	end)
 
+	local function mapFileName(prefix)
+		local name
+		pcall(function()
+			name = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+		end)
+		if type(name) ~= "string" or name == "" then
+			name = game.Name
+		end
+		name = tostring(name):gsub('[<>:"/\\|?*%c]', ""):gsub("^%s+", ""):gsub("%s+$", "")
+		if name == "" then name = "Place_" .. tostring(game.PlaceId) end
+		return string.sub(name, 1, 80) .. prefix
+	end
+
 	local USSI_URLS = {
 		"https://raw.githubusercontent.com/rbxlx/SynSaveInstance/main/saveinstance.luau",
 		"https://raw.githubusercontent.com/luau/UniversalSynSaveInstance/main/saveinstance.luau",
@@ -2021,7 +2034,7 @@ local function createMiniStudio()
 		saveSelectedButton.Active = false
 		saveSelectedButton.AutoButtonColor = false
 		exportStatusLabel.Text = string.format("Memulai USSI untuk %d root; status detail dari USSI.", #selectedRoots)
-		local basePath = "XenoSelectiveSave_" .. os.date("!%Y%m%d_%H%M%S")
+		local basePath = mapFileName("_selected")
 		task.spawn(function()
 			local ok, err = pcall(saveinstance, {
 				mode = "__selective_export__",
@@ -2082,7 +2095,7 @@ local function createMiniStudio()
 				task.wait(0.15)
 			end
 		end)
-		local basePath = "XenoFullSave_" .. os.date("!%Y%m%d_%H%M%S")
+		local basePath = mapFileName("")
 		task.spawn(function()
 			local ok, err = pcall(saveinstance, {
 				IsModel = false,
