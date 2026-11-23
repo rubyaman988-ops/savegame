@@ -1,4 +1,4 @@
-print("[MiniStudio] v7 build 2026-11-23-e")
+print("[MiniStudio] v7 build 2026-11-23-f")
 --[[
 	Player Utility Panel (LocalScript)
 	Letak: StarterPlayer > StarterPlayerScripts
@@ -2041,6 +2041,7 @@ local function createMiniStudio()
 				ExtraInstances = selectedRoots,
 				IsModel = true,
 				ShowStatus = true,
+				ReadMe = false,
 				FilePath = basePath,
 			})
 			saveSelectedButton.Active = true
@@ -2100,6 +2101,7 @@ local function createMiniStudio()
 			local ok, err = pcall(saveinstance, {
 				IsModel = false,
 				ShowStatus = true,
+				ReadMe = false,
 				FilePath = basePath,
 			})
 			monitorProgress = false
