@@ -1,4 +1,4 @@
-print("[MiniStudio] v7 build 2026-11-23-c")
+print("[MiniStudio] v7 build 2026-11-23-d")
 --[[
 	Player Utility Panel (LocalScript)
 	Letak: StarterPlayer > StarterPlayerScripts
@@ -1937,7 +1937,10 @@ local function createMiniStudio()
 		refreshExportPanel()
 	end)
 
-	local USSI_REPO = "https://raw.githubusercontent.com/luau/UniversalSynSaveInstance/main/"
+	local USSI_URLS = {
+		"https://raw.githubusercontent.com/rbxlx/SynSaveInstance/main/saveinstance.luau",
+		"https://raw.githubusercontent.com/luau/UniversalSynSaveInstance/main/saveinstance.luau",
+	}
 	local ussiFn = nil
 
 	local function loadUSSI()
@@ -1945,14 +1948,26 @@ local function createMiniStudio()
 		if type(loadstring) ~= "function" or type(game.HttpGet) ~= "function" then
 			return nil, "loadstring/HttpGet tidak tersedia"
 		end
-		local ok, fn = pcall(function()
-			return loadstring(game:HttpGet(USSI_REPO .. "saveinstance.luau", true), "saveinstance")()
-		end)
-		if ok and type(fn) == "function" then
-			ussiFn = fn
-			return fn
+		local lastErr = "tidak ada URL USSI"
+		for _, url in ipairs(USSI_URLS) do
+			local okGet, src = pcall(function() return game:HttpGet(url, true) end)
+			if not okGet or type(src) ~= "string" or #src < 10000 then
+				lastErr = "download gagal: " .. url .. " -> " .. tostring(okGet and src and string.sub(src, 1, 40) or src)
+			else
+				local fn, compileErr = loadstring(src, "saveinstance")
+				if not fn then
+					lastErr = "compile gagal: " .. tostring(compileErr)
+				else
+					local okRun, res = pcall(fn)
+					if okRun and type(res) == "function" then
+						ussiFn = res
+						return res
+					end
+					lastErr = "run gagal: " .. tostring(res)
+				end
+			end
 		end
-		return nil, "load USSI gagal: " .. tostring(fn)
+		return nil, lastErr
 	end
 
 	-- Coba saveinstance bawaan executor dulu; kalau error/tidak ada, coba USSI.
