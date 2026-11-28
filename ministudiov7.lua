@@ -1,4 +1,4 @@
-print("[MiniStudio] v7 build 2026-11-23-f")
+print("[MiniStudio] v7 build 2026-11-28-a")
 --[[
 	Player Utility Panel (LocalScript)
 	Letak: StarterPlayer > StarterPlayerScripts
@@ -1951,7 +1951,8 @@ local function createMiniStudio()
 	end
 
 	local USSI_URLS = {
-		"https://raw.githubusercontent.com/rbxlx/SynSaveInstance/main/saveinstance.luau",
+		"https://codeberg.org/phoriah/UniversalSynSaveInstance/raw/branch/main/saveinstance.luau",
+		"https://raw.githubusercontent.com/rbxlx/SynSaveInstance/main/saveinstance.luau", -- loader kecil, ada cache sendiri
 		"https://raw.githubusercontent.com/luau/UniversalSynSaveInstance/main/saveinstance.luau",
 	}
 	local ussiFn = nil
@@ -1964,7 +1965,7 @@ local function createMiniStudio()
 		local lastErr = "tidak ada URL USSI"
 		for _, url in ipairs(USSI_URLS) do
 			local okGet, src = pcall(function() return game:HttpGet(url, true) end)
-			if not okGet or type(src) ~= "string" or #src < 10000 then
+			if not okGet or type(src) ~= "string" or #src < 300 or string.find(string.sub(src, 1, 20), "404", 1, true) then
 				lastErr = "download gagal: " .. url .. " -> " .. tostring(okGet and src and string.sub(src, 1, 40) or src)
 			else
 				local fn, compileErr = loadstring(src, "saveinstance")
